@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -86,6 +88,37 @@ func checkPaymentDates() {
 	}
 }
 
+// startBot запускает Telegram-бота, который отвечает на команду /start
+func startBot() {
+	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	bot.Debug = true
+	log.Printf("Авторизация как %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates, err := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
+
+		// Обрабатываем команду /start
+		if update.Message.Text == "/start" {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! 👋 Добро пожаловать в нашего бота!")
+			_, err := bot.Send(msg)
+			if err != nil {
+				log.Println("Ошибка при отправке сообщения:", err)
+			}
+		}
+	}
+}
+
 func main() {
 	// Загружаем переменные окружения из .env
 	if err := godotenv.Load(); err != nil {
@@ -103,6 +136,9 @@ func main() {
 		fmt.Println("Ошибка настройки cron-задачи:", err)
 	}
 	c.Start()
+
+	// Запускаем Telegram-бота в отдельной горутине
+	go startBot()
 
 	// Настройка HTTP-сервера с помощью Gin
 	router := gin.Default()
