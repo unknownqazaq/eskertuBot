@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 
 const API_URL = 'https://eskertubot.onrender.com/api/tenants'
 
@@ -71,12 +71,10 @@ const isLoading = ref(false)
 const error = ref(null)
 const successMessage = ref(null)
 
-// Вычисляем уникальные квартиры для фильтра
 const uniqueApartments = computed(() =>
   [...new Set(tenants.value.map(t => t.apartment))]
 )
 
-// Фильтрация арендаторов по выбранной квартире
 const filteredTenants = computed(() =>
   selectedApartment.value
     ? tenants.value.filter(t => t.apartment === selectedApartment.value)
@@ -94,8 +92,6 @@ async function addTenant() {
     error.value = null
     successMessage.value = null
 
-    console.log('Отправляемые данные:', JSON.stringify(newTenant))
-
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -106,22 +102,17 @@ async function addTenant() {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Ошибка ответа сервера:', errorData)
       throw new Error(errorData.error || 'Ошибка сервера')
     }
 
     const data = await response.json()
-    console.log('Ответ сервера:', data)
-
     successMessage.value = 'Квартирант добавлен и уведомление отправлено'
 
     tenants.value.push({ ...newTenant })
-
     newTenant.name = ''
     newTenant.apartment = ''
     newTenant.paymentDate = ''
   } catch (err) {
-    console.error('Ошибка при отправке:', err)
     error.value = err.message
   } finally {
     isLoading.value = false
@@ -152,9 +143,23 @@ function getMonthName(month) {
   ]
   return months[+month - 1]
 }
-</script>
 
-<style scoped>
+// Логика для скрытия клавиатуры при скроллинге
+const handleScroll = () => {
+  const activeElement = document.activeElement
+  if (activeElement && activeElement.tagName === 'INPUT') {
+    activeElement.blur()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+</script>
 
 
 .container {
