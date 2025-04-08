@@ -34,9 +34,24 @@
     <!-- Форма для добавления нового квартиранта -->
     <h3 class="subtitle">Добавить нового квартиранта</h3>
     <div class="form">
-      <input v-model="newTenant.name" placeholder="Имя" class="input" />
-      <input v-model="newTenant.apartment" placeholder="Квартира" class="input" />
-      <input v-model="newTenant.paymentDate" type="date" class="input" />
+      <input
+        v-model="newTenant.name"
+        placeholder="Имя"
+        class="input"
+        @keydown.enter="removeFocus"
+      />
+      <input
+        v-model="newTenant.apartment"
+        placeholder="Квартира"
+        class="input"
+        @keydown.enter="removeFocus"
+      />
+      <input
+        v-model="newTenant.paymentDate"
+        type="date"
+        class="input"
+        @keydown.enter="removeFocus"
+      />
       <button class="btn btn-add" @click="addTenant" :disabled="isLoading">
         {{ isLoading ? 'Отправка...' : 'Добавить' }}
       </button>
@@ -49,7 +64,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, computed } from 'vue'
 
 const API_URL = 'https://eskertubot.onrender.com/api/tenants'
 
@@ -71,10 +86,12 @@ const isLoading = ref(false)
 const error = ref(null)
 const successMessage = ref(null)
 
+// Вычисляем уникальные квартиры для фильтра
 const uniqueApartments = computed(() =>
   [...new Set(tenants.value.map(t => t.apartment))]
 )
 
+// Фильтрация арендаторов по выбранной квартире
 const filteredTenants = computed(() =>
   selectedApartment.value
     ? tenants.value.filter(t => t.apartment === selectedApartment.value)
@@ -92,6 +109,8 @@ async function addTenant() {
     error.value = null
     successMessage.value = null
 
+    console.log('Отправляемые данные:', JSON.stringify(newTenant))
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -102,17 +121,22 @@ async function addTenant() {
 
     if (!response.ok) {
       const errorData = await response.json()
+      console.error('Ошибка ответа сервера:', errorData)
       throw new Error(errorData.error || 'Ошибка сервера')
     }
 
     const data = await response.json()
+    console.log('Ответ сервера:', data)
+
     successMessage.value = 'Квартирант добавлен и уведомление отправлено'
 
     tenants.value.push({ ...newTenant })
+
     newTenant.name = ''
     newTenant.apartment = ''
     newTenant.paymentDate = ''
   } catch (err) {
+    console.error('Ошибка при отправке:', err)
     error.value = err.message
   } finally {
     isLoading.value = false
@@ -144,27 +168,13 @@ function getMonthName(month) {
   return months[+month - 1]
 }
 
-// Логика для скрытия клавиатуры при прокрутке
-const handleScroll = () => {
-  const activeElement = document.activeElement
-  // Если фокус не на поле ввода, скрываем клавиатуру
-  if (activeElement && activeElement.tagName !== 'INPUT') {
-    activeElement.blur()
-  }
+// Убираем фокус при нажатии Enter
+const removeFocus = (event) => {
+  event.target.blur()
 }
-
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
 </script>
 
-
-<style>
-
+<style scoped>
 .container {
   background: white;
   max-width: 400px;
@@ -297,12 +307,4 @@ onUnmounted(() => {
   color: #666;
   margin-top: 20px;
 }
-.label {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  display: block;
-  text-align: center; /* Центрирование текста */
-}
-
-
 </style>
