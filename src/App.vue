@@ -147,13 +147,15 @@ function getMonthName(month) {
 
 // Логика для скрытия клавиатуры при прокрутке
 const handleScroll = () => {
-  // Проверяем, если клавиатура видна, то скрываем
+  // Мы не будем скрывать клавиатуру при прокрутке, а только когда она действительно видна
   if (isKeyboardVisible.value) {
-    const activeElement = document.activeElement
-    if (activeElement && activeElement.tagName === 'INPUT') {
-      activeElement.blur()
-      isKeyboardVisible.value = false  // Убираем флаг, что клавиатура видна
-    }
+    setTimeout(() => {
+      const activeElement = document.activeElement
+      if (activeElement && activeElement.tagName === 'INPUT') {
+        activeElement.blur()
+        isKeyboardVisible.value = false  // Убираем флаг, что клавиатура видна
+      }
+    }, 100)  // Задержка для корректной работы с фокусом
   }
 }
 
