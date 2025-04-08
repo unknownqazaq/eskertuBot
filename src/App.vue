@@ -69,7 +69,7 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
 
-const API_URL = 'https://eskertubot.onrender.com/api/tenants'
+const API_URL = 'https://unknownqazaq.github.io/eskertuBot.github.io/api/tenants'
 
 // Пример данных для демонстрации
 const tenants = ref([
