@@ -109,7 +109,7 @@ func main() {
 
 	// Настройка CORS для фронтенда
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5185"}, // Адрес фронтенда
+		AllowOrigins:     []string{"https://eskertu-bot.vercel.app/"}, // Адрес фронтенда
 		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type"},
 		AllowCredentials: true,
