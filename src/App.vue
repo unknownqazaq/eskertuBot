@@ -70,6 +70,7 @@ const selectedApartment = ref('')
 const isLoading = ref(false)
 const error = ref(null)
 const successMessage = ref(null)
+const isKeyboardVisible = ref(false)  // Флаг для отслеживания, видна ли клавиатура
 
 const uniqueApartments = computed(() =>
   [...new Set(tenants.value.map(t => t.apartment))]
@@ -144,22 +145,39 @@ function getMonthName(month) {
   return months[+month - 1]
 }
 
-// Логика для скрытия клавиатуры при скроллинге
+// Логика для скрытия клавиатуры при прокрутке
 const handleScroll = () => {
-  const activeElement = document.activeElement
-  if (activeElement && activeElement.tagName === 'INPUT') {
-    activeElement.blur()
+  // Проверяем, если клавиатура видна, то скрываем
+  if (isKeyboardVisible.value) {
+    const activeElement = document.activeElement
+    if (activeElement && activeElement.tagName === 'INPUT') {
+      activeElement.blur()
+      isKeyboardVisible.value = false  // Убираем флаг, что клавиатура видна
+    }
   }
+}
+
+const handleFocus = () => {
+  isKeyboardVisible.value = true  // Устанавливаем флаг, что клавиатура видна
 }
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  // Добавим обработчик на фокус на поле ввода
+  document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('focus', handleFocus)
+  })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  document.querySelectorAll('input').forEach(input => {
+    input.removeEventListener('focus', handleFocus)
+  })
 })
 </script>
+
+
 <style>
 
 .container {
