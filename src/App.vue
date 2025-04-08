@@ -160,7 +160,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
-
+<style>
 
 .container {
   background: white;
