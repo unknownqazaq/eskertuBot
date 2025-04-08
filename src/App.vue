@@ -117,9 +117,12 @@ async function addTenant() {
 
     tenants.value.push({ ...newTenant })
 
+
     newTenant.name = ''
     newTenant.apartment = ''
     newTenant.paymentDate = ''
+        // 👉 Снять фокус со всех полей и скрыть клавиатуру
+    document.getElementById('hiddenBlur').focus()
   } catch (err) {
     console.error('Ошибка при отправке:', err)
     error.value = err.message
@@ -155,6 +158,11 @@ function getMonthName(month) {
 </script>
 
 <style scoped>
+
+html, body {
+  overscroll-behavior: none;
+}
+
 
 
 .container {
