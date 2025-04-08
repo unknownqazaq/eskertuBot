@@ -155,6 +155,8 @@ function getMonthName(month) {
 </script>
 
 <style scoped>
+
+
 .container {
   background: white;
   max-width: 400px;
@@ -293,5 +295,57 @@ function getMonthName(month) {
   display: block;
   text-align: center; /* Центрирование текста */
 }
+@media (max-width: 480px) {
+  .container {
+    padding: 15px;
+    margin: 10px auto;
+    max-width: 100%;
+    border-radius: 10px;
+  }
+
+  .title,
+  .subtitle {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+  }
+
+  .input,
+  .btn,
+  .tenant-detail {
+    font-size: 0.9rem;
+  }
+
+  .tenant-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tenant-buttons {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .btn {
+    flex: 1;
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .form input {
+    font-size: 0.9rem;
+  }
+
+  .btn-add {
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  .notification {
+    font-size: 0.85rem;
+  }
+}
+
 
 </style>
