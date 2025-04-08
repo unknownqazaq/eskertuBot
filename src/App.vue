@@ -34,10 +34,32 @@
     <!-- Форма для добавления нового квартиранта -->
     <h3 class="subtitle">Добавить нового квартиранта</h3>
     <div class="form">
-      <input v-model="newTenant.name" placeholder="Имя" class="input" />
-      <input v-model="newTenant.apartment" placeholder="Квартира" class="input" />
-      <input v-model="newTenant.paymentDate" type="date" class="input" />
-      <button class="btn btn-add" @click="addTenant" :disabled="isLoading">
+      <input
+        ref="nameInput"
+        v-model="newTenant.name"
+        placeholder="Имя"
+        class="input"
+        @keyup.enter="addTenant"
+      />
+      <input
+        ref="apartmentInput"
+        v-model="newTenant.apartment"
+        placeholder="Квартира"
+        class="input"
+        @keyup.enter="addTenant"
+      />
+      <input
+        ref="paymentInput"
+        v-model="newTenant.paymentDate"
+        type="date"
+        class="input"
+        @keyup.enter="addTenant"
+      />
+      <button
+        class="btn btn-add"
+        @click="addTenant"
+        :disabled="isLoading"
+      >
         {{ isLoading ? 'Отправка...' : 'Добавить' }}
       </button>
     </div>
@@ -49,7 +71,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 const API_URL = 'https://eskertubot.onrender.com/api/tenants'
 
@@ -117,12 +139,13 @@ async function addTenant() {
 
     tenants.value.push({ ...newTenant })
 
-
+    // Очистить форму
     newTenant.name = ''
     newTenant.apartment = ''
     newTenant.paymentDate = ''
-        // 👉 Снять фокус со всех полей и скрыть клавиатуру
-    document.getElementById('hiddenBlur').focus()
+
+    // Скрыть клавиатуру
+    blurInputs()
   } catch (err) {
     console.error('Ошибка при отправке:', err)
     error.value = err.message
@@ -155,16 +178,16 @@ function getMonthName(month) {
   ]
   return months[+month - 1]
 }
-</script>
 
-<style scoped>
-
-html, body {
-  overscroll-behavior: none;
+// Скрыть клавиатуру
+function blurInputs() {
+  if ($refs.nameInput) $refs.nameInput.blur()
+  if ($refs.apartmentInput) $refs.apartmentInput.blur()
+  if ($refs.paymentInput) $refs.paymentInput.blur()
 }
 
-
-
+<style scoped>
+/* Стили для мобильных устройств */
 .container {
   background: white;
   max-width: 400px;
@@ -175,7 +198,6 @@ html, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Заголовки */
 .title {
   font-size: 1.6rem;
   text-align: center;
@@ -188,27 +210,18 @@ html, body {
   text-align: center;
 }
 
-/* Фильтр */
 .filter {
   margin-bottom: 15px;
 }
-.label {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  display: block;
-}
 
-/* Общие стили для input */
 .input {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
   border-radius: 10px;
   border: 1px solid #ccc;
-  box-sizing: border-box;
 }
 
-/* Стили для карточек квартирантов */
 .tenant-card {
   border: 1px solid #ddd;
   border-radius: 15px;
@@ -223,17 +236,6 @@ html, body {
   line-height: 1.4;
 }
 
-.tenant-name {
-  font-size: 1.2rem;
-  margin-bottom: 5px;
-}
-
-.tenant-detail {
-  font-size: 0.9rem;
-  color: #555;
-}
-
-/* Кнопки карточки */
 .tenant-buttons {
   display: flex;
   flex-direction: column;
@@ -258,12 +260,6 @@ html, body {
   color: white;
 }
 
-/* Стили для формы */
-.form {
-  margin-top: 20px;
-}
-
-/* Стили для кнопки добавления */
 .btn-add {
   background-color: #007bff;
   color: white;
@@ -274,7 +270,6 @@ html, body {
   margin-top: 10px;
 }
 
-/* Стили для уведомлений */
 .notification {
   margin-top: 10px;
   padding: 8px;
@@ -282,78 +277,24 @@ html, body {
   border-radius: 8px;
   font-size: 0.9rem;
 }
+
 .notification.error {
   color: #a94442;
   background-color: #f2dede;
 }
+
 .notification.success {
   color: #3c763d;
   background-color: #dff0d8;
 }
 
-/* Унифицированные отступы */
 .empty {
   text-align: center;
   color: #666;
   margin-top: 20px;
 }
-.label {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  display: block;
-  text-align: center; /* Центрирование текста */
-}
-@media (max-width: 480px) {
-  .container {
-    padding: 15px;
-    margin: 10px auto;
-    max-width: 100%;
-    border-radius: 10px;
-  }
-
-  .title,
-  .subtitle {
-    font-size: 1.3rem;
-    margin-bottom: 10px;
-  }
-
-  .input,
-  .btn,
-  .tenant-detail {
-    font-size: 0.9rem;
-  }
-
-  .tenant-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .tenant-buttons {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-
-  .btn {
-    flex: 1;
-    font-size: 0.9rem;
-    padding: 8px;
-  }
-
-  .form input {
-    font-size: 0.9rem;
-  }
-
-  .btn-add {
-    font-size: 1rem;
-    padding: 12px;
-  }
-
-  .notification {
-    font-size: 0.85rem;
-  }
-}
-
 
 </style>
+```
+
+Теперь, когда данные отправляются, клавиатура автоматически убирается.
