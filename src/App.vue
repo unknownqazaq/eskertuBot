@@ -46,12 +46,15 @@
         class="input"
         @keydown.enter="removeFocus"
       />
-      <input
-        v-model="newTenant.paymentDate"
-        type="date"
-        class="input"
-        @keydown.enter="removeFocus"
-      />
+      <div class="date-wrapper">
+        <input
+          v-model="newTenant.paymentDate"
+          type="date"
+          class="input"
+          @keydown.enter="removeFocus"
+        />
+        <i class="fas fa-calendar-alt"></i> <!-- Иконка календаря -->
+      </div>
       <button class="btn btn-add" @click="addTenant" :disabled="isLoading">
         {{ isLoading ? 'Отправка...' : 'Добавить' }}
       </button>
@@ -273,6 +276,10 @@ const removeFocus = (event) => {
   margin-top: 20px;
 }
 
+.date-wrapper {
+  position: relative;
+}
+
 /* Стили для кнопки добавления */
 .btn-add {
   background-color: #007bff;
@@ -306,5 +313,15 @@ const removeFocus = (event) => {
   text-align: center;
   color: #666;
   margin-top: 20px;
+}
+
+/* Иконка календаря */
+i.fas.fa-calendar-alt {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #007bff;
 }
 </style>
