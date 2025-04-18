@@ -11,7 +11,6 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/robfig/cron/v3"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -60,6 +59,7 @@ func migrate() error {
 		id SERIAL PRIMARY KEY,
 		name TEXT NOT NULL,
 		apartment TEXT NOT NULL,
+		chat_id BIGINT UNIQUE
 		payment_date DATE NOT NULL
 	);`
 	_, err := db.Exec(query)
@@ -67,30 +67,34 @@ func migrate() error {
 }
 
 func sendTelegramMessage(message string) error {
-	// Чтение chat_id из файла
-	chatIDBytes, err := os.ReadFile("chat_id.txt")
-	if err != nil {
-		return fmt.Errorf("не удалось прочитать chat_id.txt: %v", err)
-	}
-	chatID := string(chatIDBytes)
-
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
 
-	body, _ := json.Marshal(map[string]string{
-		"chat_id": chatID,
-		"text":    message,
-	})
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	// Читаем все chat_id из базы данных
+	rows, err := db.Query("SELECT chat_id FROM tenants WHERE chat_id IS NOT NULL")
 	if err != nil {
-		return err
+		return fmt.Errorf("не удалось получить chat_id из базы данных: %v", err)
 	}
-	defer resp.Body.Close()
+	defer rows.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		resBody, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("telegram error: %s", resBody)
+	// Проходим по всем chat_id и отправляем сообщение каждому пользователю
+	for rows.Next() {
+		var chatID int64
+		if err := rows.Scan(&chatID); err != nil {
+			log.Printf("Ошибка чтения chat_id: %v", err)
+			continue
+		}
+
+		body, _ := json.Marshal(map[string]string{
+			"chat_id": fmt.Sprintf("%d", chatID),
+			"text":    message,
+		})
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+		if err != nil {
+			log.Printf("Ошибка отправки для chat_id %d: %v", chatID, err)
+			continue
+		}
+		resp.Body.Close()
 	}
 
 	return nil
@@ -158,10 +162,10 @@ func startBot() {
 				if update.Message.Text == "/start" {
 					chatID := update.Message.Chat.ID
 
-					// сохраняем chatID в .env или временно в файл
-					err := os.WriteFile("chat_id.txt", []byte(fmt.Sprintf("%d", chatID)), 0644)
+					// Сохраняем chatID в базу данных
+					_, err := db.Exec("INSERT INTO tenants (chat_id) VALUES ($1) ON CONFLICT (chat_id) DO NOTHING", chatID)
 					if err != nil {
-						log.Println("Ошибка сохранения chat_id:", err)
+						log.Println("Ошибка сохранения chat_id в базу данных:", err)
 					}
 
 					msg := tgbotapi.NewMessage(chatID, "Бот активирован. Вы будете получать уведомления о платежах.")
