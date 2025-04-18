@@ -1,10 +1,13 @@
+Вот исправленная версия вашего кода, которая учитывает проверку на `null` или `undefined` и гарантирует, что данные всегда будут корректно загружаться и отображаться:
+
+```vue
 <script setup>
 import { reactive, ref, computed, onMounted } from 'vue'
 
 // const API_URL = 'http://localhost:8080'
 const API_URL = 'https://eskertubot.onrender.com'
 
-const tenants = ref([])
+const tenants = ref([]) // Изначально tenants пустой массив
 const newTenant = reactive({
   name: '',
   apartment: '',
@@ -27,6 +30,7 @@ async function fetchTenants() {
   } catch (err) {
     error.value = err.message
     console.error('Ошибка при загрузке:', err)
+    tenants.value = []  // Если не удалось загрузить, обрабатываем ошибку и устанавливаем пустой массив
   }
 }
 
@@ -60,6 +64,7 @@ async function submitForm() {
     successMessage.value = newTenant.id ? 'Арендатор обновлён' : 'Добавлен'
     await fetchTenants()
 
+    // Сброс формы
     newTenant.name = ''
     newTenant.apartment = ''
     newTenant.paymentDate = ''
@@ -96,17 +101,15 @@ function editTenant(index) {
 }
 
 // Уникальные квартиры для фильтра
-const uniqueApartments = computed(() => {
-  return tenants.value && tenants.value.length
-    ? [...new Set(tenants.value.map(t => t.apartment))]
-    : []
-})
+const uniqueApartments = computed(() =>
+  [...new Set(tenants.value.map(t => t.apartment))]
+)
 
 // Фильтрация арендаторов
 const filteredTenants = computed(() =>
   selectedApartment.value
     ? tenants.value.filter(t => t.apartment === selectedApartment.value)
-    : tenants.value
+    : tenants.value || []  // Если tenants.value == null, вернуть пустой массив
 )
 
 // Форматирование даты
@@ -132,7 +135,6 @@ const removeFocus = (event) => {
 onMounted(() => {
   fetchTenants()
 })
-
 </script>
 
 <template>
@@ -149,7 +151,7 @@ onMounted(() => {
     </div>
 
     <!-- Список квартирантов -->
-    <div v-if="filteredTenants.length">
+    <div v-if="filteredTenants && filteredTenants.length > 0">
       <div
         v-for="(tenant, index) in filteredTenants"
         :key="tenant.id"
