@@ -23,6 +23,7 @@ type Tenant struct {
 	Name        string `json:"name"`
 	Apartment   string `json:"apartment"`
 	PaymentDate string `json:"paymentDate"` // формат "2006-01-02"
+	ChatID      *int64 `json:"chat_id"`
 }
 
 var db *sql.DB
