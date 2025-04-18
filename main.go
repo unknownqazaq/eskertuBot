@@ -58,7 +58,6 @@ func migrate() error {
 	return err
 }
 
-// sendTelegramMessage отправляет Telegram-сообщение через Bot API
 func sendTelegramMessage(message string) error {
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	chatID := os.Getenv("TELEGRAM_CHAT_ID")
@@ -84,7 +83,6 @@ func sendTelegramMessage(message string) error {
 	return nil
 }
 
-// checkPaymentDates проходит по всем арендаторам и отправляет уведомление
 func checkPaymentDates() {
 	now := time.Now().Truncate(24 * time.Hour)
 	tomorrow := now.Add(24 * time.Hour)
@@ -125,7 +123,6 @@ func checkPaymentDates() {
 	}
 }
 
-// startBot запускает Telegram-бота (временно без команд)
 func startBot() {
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
@@ -136,7 +133,6 @@ func startBot() {
 }
 
 func main() {
-	// .env
 	if err := godotenv.Load(); err != nil {
 		log.Println("Ошибка загрузки .env файла:", err)
 	}
@@ -148,7 +144,6 @@ func main() {
 		log.Fatalf("Ошибка миграции: %v", err)
 	}
 
-	// Cron
 	c := cron.New()
 	_, err := c.AddFunc("0 9 * * *", func() {
 		fmt.Println("Запуск проверки арендаторов в 09:00")
@@ -159,20 +154,17 @@ func main() {
 	}
 	c.Start()
 
-	// Telegram bot
 	go startBot()
 
-	// Gin
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5185", "https://eskertu-bot.vercel.app"},
-		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
+		AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type"},
 		AllowCredentials: true,
 	}))
 
-	// POST /api/tenants — добавление арендатора
 	router.POST("/api/tenants", func(c *gin.Context) {
 		var t Tenant
 		if err := c.ShouldBindJSON(&t); err != nil {
@@ -206,11 +198,62 @@ func main() {
 		})
 	})
 
-	// GET /ping
+	router.GET("/api/tenants", func(c *gin.Context) {
+		rows, err := db.Query(`SELECT id, name, apartment, payment_date FROM tenants ORDER BY id`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка чтения из БД"})
+			return
+		}
+		defer rows.Close()
+
+		var tenants []Tenant
+		for rows.Next() {
+			var t Tenant
+			var pd time.Time
+			if err := rows.Scan(&t.ID, &t.Name, &t.Apartment, &pd); err != nil {
+				continue
+			}
+			t.PaymentDate = pd.Format("2006-01-02")
+			tenants = append(tenants, t)
+		}
+
+		c.JSON(http.StatusOK, tenants)
+	})
+
+	router.PUT("/api/tenants/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var t Tenant
+		if err := c.ShouldBindJSON(&t); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
+			return
+		}
+		pd, err := time.Parse("2006-01-02", t.PaymentDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты"})
+			return
+		}
+		query := `UPDATE tenants SET name=$1, apartment=$2, payment_date=$3 WHERE id=$4`
+		_, err = db.Exec(query, t.Name, t.Apartment, pd, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Арендатор обновлён"})
+	})
+
+	router.DELETE("/api/tenants/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		_, err := db.Exec(`DELETE FROM tenants WHERE id=$1`, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка удаления"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Арендатор удалён"})
+	})
+
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
 
-	// Запуск сервера
 	router.Run(":8080")
 }
