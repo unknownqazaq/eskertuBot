@@ -28,17 +28,15 @@ type Tenant struct {
 
 var db *sql.DB
 
-//	func initPostgres() error {
-//		dsn := fmt.Sprintf(
-//			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-//			os.Getenv("POSTGRES_HOST"),
-//			os.Getenv("POSTGRES_PORT"),
-//			os.Getenv("POSTGRES_USER"),
-//			os.Getenv("POSTGRES_PASSWORD"),
-//			os.Getenv("POSTGRES_DB"),
-//		)
 func initPostgres() error {
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_DB"),
+	)
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {
@@ -46,14 +44,6 @@ func initPostgres() error {
 	}
 	return db.Ping()
 }
-
-//	var err error
-//	db, err = sql.Open("postgres", dsn)
-//	if err != nil {
-//		return err
-//	}
-//	return db.Ping()
-//}
 
 func migrate() error {
 	query := `
@@ -68,9 +58,14 @@ func migrate() error {
 }
 
 func sendTelegramMessage(message string) error {
-	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	chatID := os.Getenv("TELEGRAM_CHAT_ID")
+	// Чтение chat_id из файла
+	chatIDBytes, err := os.ReadFile("chat_id.txt")
+	if err != nil {
+		return fmt.Errorf("не удалось прочитать chat_id.txt: %v", err)
+	}
+	chatID := string(chatIDBytes)
 
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
 
 	body, _ := json.Marshal(map[string]string{
@@ -139,6 +134,33 @@ func startBot() {
 	}
 	bot.Debug = true
 	log.Printf("Авторизация как %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates, err := bot.GetUpdatesChan(u)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		for update := range updates {
+			if update.Message != nil {
+				if update.Message.Text == "/start" {
+					chatID := update.Message.Chat.ID
+
+					// сохраняем chatID в .env или временно в файл
+					err := os.WriteFile("chat_id.txt", []byte(fmt.Sprintf("%d", chatID)), 0644)
+					if err != nil {
+						log.Println("Ошибка сохранения chat_id:", err)
+					}
+
+					msg := tgbotapi.NewMessage(chatID, "Бот активирован. Вы будете получать уведомления о платежах.")
+					bot.Send(msg)
+				}
+			}
+		}
+	}()
 }
 
 func main() {
