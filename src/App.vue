@@ -1,3 +1,138 @@
+<script setup>
+import { reactive, ref, computed, onMounted } from 'vue'
+
+const API_URL = 'http://localhost:8080'
+
+const tenants = ref([])
+const newTenant = reactive({
+  name: '',
+  apartment: '',
+  paymentDate: '',
+  id: null // Добавлено для поддержки обновления
+})
+
+const selectedApartment = ref('')
+const isLoading = ref(false)
+const error = ref(null)
+const successMessage = ref(null)
+
+// Загрузка арендаторов с бэкенда
+async function fetchTenants() {
+  try {
+    const response = await fetch(`${API_URL}/api/tenants`)
+    if (!response.ok) throw new Error('Ошибка при загрузке арендаторов')
+
+    tenants.value = await response.json()
+  } catch (err) {
+    error.value = err.message
+    console.error('Ошибка при загрузке:', err)
+  }
+}
+
+// Добавление или обновление арендатора
+async function submitForm() {
+  if (!newTenant.name || !newTenant.apartment || !newTenant.paymentDate) {
+    error.value = 'Заполните все поля'
+    return
+  }
+
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const method = newTenant.id ? 'PUT' : 'POST'
+    const url = newTenant.id
+      ? `${API_URL}/api/tenants/${newTenant.id}`
+      : `${API_URL}/api/tenants`
+
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTenant),
+    })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      throw new Error(errData.error || 'Ошибка сервера')
+    }
+
+    successMessage.value = newTenant.id ? 'Арендатор обновлён' : 'Добавлен'
+    await fetchTenants()
+
+    newTenant.name = ''
+    newTenant.apartment = ''
+    newTenant.paymentDate = ''
+    newTenant.id = null // сбрасываем id после добавления или обновления
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Удаление арендатора
+async function deleteTenant(index) {
+  const tenant = filteredTenants.value[index]
+  try {
+    const response = await fetch(`${API_URL}/api/tenants/${tenant.id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) throw new Error('Ошибка при удалении')
+    await fetchTenants()
+  } catch (err) {
+    console.error(err)
+    error.value = err.message
+  }
+}
+
+// Редактирование арендатора
+function editTenant(index) {
+  const tenant = filteredTenants.value[index]
+  newTenant.name = tenant.name
+  newTenant.apartment = tenant.apartment
+  newTenant.paymentDate = tenant.paymentDate
+  newTenant.id = tenant.id // для обновления
+}
+
+// Уникальные квартиры для фильтра
+const uniqueApartments = computed(() =>
+  [...new Set(tenants.value.map(t => t.apartment))]
+)
+
+// Фильтрация арендаторов
+const filteredTenants = computed(() =>
+  selectedApartment.value
+    ? tenants.value.filter(t => t.apartment === selectedApartment.value)
+    : tenants.value
+)
+
+// Форматирование даты
+function formatDate(dateStr) {
+  const [year, month, day] = dateStr.split('-')
+  return `${+day} ${getMonthName(month)}`
+}
+
+function getMonthName(month) {
+  const months = [
+    'января', 'февраля', 'марта', 'апреля', 'мая',
+    'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ]
+  return months[+month - 1]
+}
+
+// Убираем фокус при нажатии Enter
+const removeFocus = (event) => {
+  event.target.blur()
+}
+
+// Загрузка данных при монтировании компонента
+onMounted(() => {
+  fetchTenants()
+})
+
+
+</script>
+
 <template>
   <div class="container">
     <h2 class="title">Управление квартирантами</h2>
@@ -15,7 +150,7 @@
     <div v-if="filteredTenants.length">
       <div
         v-for="(tenant, index) in filteredTenants"
-        :key="index"
+        :key="tenant.id"
         class="tenant-card"
       >
         <div class="tenant-info">
@@ -55,8 +190,8 @@
         />
         <i class="fas fa-calendar-alt"></i> <!-- Иконка календаря -->
       </div>
-      <button class="btn btn-add" @click="addTenant" :disabled="isLoading">
-        {{ isLoading ? 'Отправка...' : 'Добавить' }}
+      <button class="btn btn-add" @click="submitForm" :disabled="isLoading">
+        {{ isLoading ? 'Обработка...' : newTenant.id ? 'Обновить' : 'Добавить' }}
       </button>
     </div>
 
@@ -66,116 +201,6 @@
   </div>
 </template>
 
-<script setup>
-import { reactive, ref, computed } from 'vue'
-
-const API_URL = 'https://eskertubot.onrender.com/api/tenants'
-
-// Пример данных для демонстрации
-const tenants = ref([
-  { name: 'Волда Гао', apartment: '1', paymentDate: '2025-05-15' },
-  { name: 'Jonseusen', apartment: '2', paymentDate: '2025-02-03' },
-  { name: 'Anton Han', apartment: '3', paymentDate: '2025-05-08' },
-])
-
-const newTenant = reactive({
-  name: '',
-  apartment: '',
-  paymentDate: ''
-})
-
-const selectedApartment = ref('')
-const isLoading = ref(false)
-const error = ref(null)
-const successMessage = ref(null)
-
-// Вычисляем уникальные квартиры для фильтра
-const uniqueApartments = computed(() =>
-  [...new Set(tenants.value.map(t => t.apartment))]
-)
-
-// Фильтрация арендаторов по выбранной квартире
-const filteredTenants = computed(() =>
-  selectedApartment.value
-    ? tenants.value.filter(t => t.apartment === selectedApartment.value)
-    : tenants.value
-)
-
-async function addTenant() {
-  if (!newTenant.name || !newTenant.apartment || !newTenant.paymentDate) {
-    error.value = 'Заполните все поля'
-    return
-  }
-
-  try {
-    isLoading.value = true
-    error.value = null
-    successMessage.value = null
-
-    console.log('Отправляемые данные:', JSON.stringify(newTenant))
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newTenant)
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Ошибка ответа сервера:', errorData)
-      throw new Error(errorData.error || 'Ошибка сервера')
-    }
-
-    const data = await response.json()
-    console.log('Ответ сервера:', data)
-
-    successMessage.value = 'Квартирант добавлен и уведомление отправлено'
-
-    tenants.value.push({ ...newTenant })
-
-    newTenant.name = ''
-    newTenant.apartment = ''
-    newTenant.paymentDate = ''
-  } catch (err) {
-    console.error('Ошибка при отправке:', err)
-    error.value = err.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
-function deleteTenant(index) {
-  tenants.value.splice(index, 1)
-}
-
-function editTenant(index) {
-  const tenant = tenants.value[index]
-  newTenant.name = tenant.name
-  newTenant.apartment = tenant.apartment
-  newTenant.paymentDate = tenant.paymentDate
-  deleteTenant(index)
-}
-
-function formatDate(dateStr) {
-  const [year, month, day] = dateStr.split('-')
-  return `${+day} ${getMonthName(month)}`
-}
-
-function getMonthName(month) {
-  const months = [
-    'января', 'февраля', 'марта', 'апреля', 'мая',
-    'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-  ]
-  return months[+month - 1]
-}
-
-// Убираем фокус при нажатии Enter
-const removeFocus = (event) => {
-  event.target.blur()
-}
-</script>
 
 <style scoped>
 .container {

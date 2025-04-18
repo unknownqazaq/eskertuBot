@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:postgresql://localhost:5432/eskertu</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="tenant_db_7ihq@dpg-d00ublruibrs73er8s50-a.frankfurt-postgres.render.com" uuid="852b33f9-dff4-446b-869b-e2b76775c51a">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://dpg-d00ublruibrs73er8s50-a.frankfurt-postgres.render.com:5432/tenant_db_7ihq</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

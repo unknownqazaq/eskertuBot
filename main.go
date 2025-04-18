@@ -28,16 +28,17 @@ type Tenant struct {
 
 var db *sql.DB
 
+//	func initPostgres() error {
+//		dsn := fmt.Sprintf(
+//			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+//			os.Getenv("POSTGRES_HOST"),
+//			os.Getenv("POSTGRES_PORT"),
+//			os.Getenv("POSTGRES_USER"),
+//			os.Getenv("POSTGRES_PASSWORD"),
+//			os.Getenv("POSTGRES_DB"),
+//		)
 func initPostgres() error {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-	)
-
+	dsn := os.Getenv("DATABASE_URL")
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {
@@ -45,6 +46,14 @@ func initPostgres() error {
 	}
 	return db.Ping()
 }
+
+//	var err error
+//	db, err = sql.Open("postgres", dsn)
+//	if err != nil {
+//		return err
+//	}
+//	return db.Ping()
+//}
 
 func migrate() error {
 	query := `
@@ -159,7 +168,7 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5185", "https://eskertu-bot.vercel.app"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://eskertu-bot.vercel.app"},
 		AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type"},
 		AllowCredentials: true,
