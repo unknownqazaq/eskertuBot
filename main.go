@@ -28,15 +28,24 @@ type Tenant struct {
 
 var db *sql.DB
 
+//	func initPostgres() error {
+//		dsn := fmt.Sprintf(
+//			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+//			os.Getenv("POSTGRES_HOST"),
+//			os.Getenv("POSTGRES_PORT"),
+//			os.Getenv("POSTGRES_USER"),
+//			os.Getenv("POSTGRES_PASSWORD"),
+//			os.Getenv("POSTGRES_DB"),
+//		)
+//		var err error
+//		db, err = sql.Open("postgres", dsn)
+//		if err != nil {
+//			return err
+//		}
+//		return db.Ping()
+//	}
 func initPostgres() error {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-	)
+	dsn := os.Getenv("DATABASE_URL")
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {

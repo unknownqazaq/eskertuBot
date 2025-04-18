@@ -1,8 +1,8 @@
 <script setup>
 import { reactive, ref, computed, onMounted } from 'vue'
 
-const API_URL = 'http://localhost:8080'
-// const API_URL = 'https://eskertubot.onrender.com'
+// const API_URL = 'http://localhost:8080'
+const API_URL = 'https://eskertubot.onrender.com'
 
 const tenants = ref([])
 const newTenant = reactive({
