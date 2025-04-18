@@ -96,9 +96,11 @@ function editTenant(index) {
 }
 
 // Уникальные квартиры для фильтра
-const uniqueApartments = computed(() =>
-  [...new Set(tenants.value.map(t => t.apartment))]
-)
+const uniqueApartments = computed(() => {
+  return tenants.value && tenants.value.length
+    ? [...new Set(tenants.value.map(t => t.apartment))]
+    : []
+})
 
 // Фильтрация арендаторов
 const filteredTenants = computed(() =>
@@ -130,7 +132,6 @@ const removeFocus = (event) => {
 onMounted(() => {
   fetchTenants()
 })
-
 
 </script>
 
@@ -201,7 +202,6 @@ onMounted(() => {
     <div v-if="successMessage" class="notification success">{{ successMessage }}</div>
   </div>
 </template>
-
 
 <style scoped>
 .container {
