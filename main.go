@@ -23,7 +23,6 @@ type Tenant struct {
 	Name        string `json:"name"`
 	Apartment   string `json:"apartment"`
 	PaymentDate string `json:"paymentDate"` // формат "2006-01-02"
-	ChatID      *int64 `json:"chat_id"`
 }
 
 var db *sql.DB
@@ -57,12 +56,18 @@ func initPostgres() error {
 
 func migrate() error {
 	query := `
+	CREATE TABLE IF NOT EXISTS telegram_users (
+		id SERIAL PRIMARY KEY,
+		chat_id BIGINT UNIQUE NOT NULL
+	);
+
 	CREATE TABLE IF NOT EXISTS tenants (
 		id SERIAL PRIMARY KEY,
 		name TEXT NOT NULL,
 		apartment TEXT NOT NULL,
-		chat_id BIGINT UNIQUE,
-		payment_date DATE NOT NULL
+		payment_date DATE NOT NULL,
+		chat_id BIGINT,
+		CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES telegram_users(chat_id)
 	);`
 	_, err := db.Exec(query)
 	return err
@@ -72,14 +77,13 @@ func sendTelegramMessage(message string) error {
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
 
-	// Читаем все chat_id из базы данных
-	rows, err := db.Query("SELECT chat_id FROM tenants WHERE chat_id IS NOT NULL")
+	// Читаем все chat_id из telegram_users
+	rows, err := db.Query("SELECT chat_id FROM telegram_users")
 	if err != nil {
 		return fmt.Errorf("не удалось получить chat_id из базы данных: %v", err)
 	}
 	defer rows.Close()
 
-	// Проходим по всем chat_id и отправляем сообщение каждому пользователю
 	for rows.Next() {
 		var chatID int64
 		if err := rows.Scan(&chatID); err != nil {
@@ -160,18 +164,24 @@ func startBot() {
 
 	go func() {
 		for update := range updates {
-			if update.Message != nil {
-				if update.Message.Text == "/start" {
-					chatID := update.Message.Chat.ID
+			if update.Message != nil && update.Message.Text == "/start" {
+				chatID := update.Message.Chat.ID
 
-					// Сохраняем chatID в базу данных
-					_, err := db.Exec("INSERT INTO tenants (chat_id) VALUES ($1) ON CONFLICT (chat_id) DO NOTHING", chatID)
-					if err != nil {
-						log.Println("Ошибка сохранения chat_id в базу данных:", err)
-					}
+				// Сохраняем chat_id в таблицу telegram_users
+				_, err := db.Exec(`
+					INSERT INTO telegram_users (chat_id)
+					VALUES ($1)
+					ON CONFLICT (chat_id) DO NOTHING;
+				`, chatID)
+				if err != nil {
+					log.Println("Ошибка сохранения chat_id в telegram_users:", err)
+					continue
+				}
 
-					msg := tgbotapi.NewMessage(chatID, "Бот активирован. Вы будете получать уведомления о платежах.")
-					bot.Send(msg)
+				msg := tgbotapi.NewMessage(chatID, "Бот активирован. Вы будете получать уведомления о платежах.")
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Println("Ошибка отправки сообщения:", err)
 				}
 			}
 		}

@@ -6,3 +6,7 @@ CREATE TABLE tenants (
     apartment TEXT NOT NULL,
     payment_date DATE NOT NULL
 );
+CREATE TABLE telegram_users (
+    id SERIAL PRIMARY KEY,
+    chat_id BIGINT UNIQUE NOT NULL
+);
