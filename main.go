@@ -161,7 +161,9 @@ func startBot() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	botagozToken := 1242623334
+	zhurek := tgbotapi.NewMessage(int64(botagozToken), "Менің жаным ")
+	bot.Send(zhurek)
 	go func() {
 		for update := range updates {
 			if update.Message != nil && update.Message.Text == "/start" {
@@ -180,6 +182,7 @@ func startBot() {
 
 				msg := tgbotapi.NewMessage(chatID, "Бот активирован. Вы будете получать уведомления о платежах.")
 				_, err = bot.Send(msg)
+
 				if err != nil {
 					log.Println("Ошибка отправки сообщения:", err)
 				}
