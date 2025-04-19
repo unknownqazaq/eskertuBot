@@ -162,7 +162,7 @@ func startBot() {
 		log.Fatal(err)
 	}
 	botagozToken := 1242623334
-	zhurek := tgbotapi.NewMessage(int64(botagozToken), "Менің жаным ")
+	zhurek := tgbotapi.NewMessage(int64(botagozToken), "Менің жаным махаббатым жақсы көрем сені ❤️❤️❤️️️ ")
 	bot.Send(zhurek)
 	go func() {
 		for update := range updates {
