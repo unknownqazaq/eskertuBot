@@ -155,7 +155,7 @@ func startBot() {
 	log.Printf("Авторизация как %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = 1
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
