@@ -173,7 +173,7 @@ func startBot() {
 			if err != nil {
 				log.Println("Ошибка отправки сообщения:", err)
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(60 * time.Second)
 		}
 	}()
 	go func() {
