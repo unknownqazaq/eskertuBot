@@ -164,6 +164,9 @@ func startBot() {
 	
 	// Горутина для отправки сообщения каждую секунду
 	go func() {
+			// ID получателя
+	chatID := int64(1242623334)
+
 		for {
 			msg := tgbotapi.NewMessage(chatID, "Менің жаным махаббатым жақсы көрем сені ❤️❤️")
 			_, err := bot.Send(msg)
