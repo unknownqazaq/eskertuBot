@@ -155,15 +155,24 @@ func startBot() {
 	log.Printf("Авторизация как %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 1
+	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
 		log.Fatal(err)
 	}
-	botagozToken := 1242623334
-	zhurek := tgbotapi.NewMessage(int64(botagozToken), "Менің жаным махаббатым жақсы көрем сені ❤️❤️❤️️️ ")
-	bot.Send(zhurek)
+	
+	// Горутина для отправки сообщения каждую секунду
+	go func() {
+		for {
+			msg := tgbotapi.NewMessage(chatID, "Менің жаным махаббатым жақсы көрем сені ❤️❤️")
+			_, err := bot.Send(msg)
+			if err != nil {
+				log.Println("Ошибка отправки сообщения:", err)
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}()
 	go func() {
 		for update := range updates {
 			if update.Message != nil && update.Message.Text == "/start" {
